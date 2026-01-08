@@ -25,10 +25,22 @@ const flagEmoji = (code) => {
 
 export default function ServerCard({ server, isSelected, onSelect, userPlan }) {
     const canAccess = !server.is_premium || ['pro', 'ultimate'].includes(userPlan);
+    const [shake, setShake] = React.useState(false);
+    
+    const handleClick = () => {
+        if (canAccess) {
+            onSelect(server);
+        } else {
+            setShake(true);
+            setTimeout(() => setShake(false), 500);
+        }
+    };
     
     return (
         <motion.div
-            onClick={() => canAccess && onSelect(server)}
+            onClick={handleClick}
+            animate={shake ? { x: [-10, 10, -10, 10, 0] } : {}}
+            transition={{ duration: 0.4 }}
             className={cn(
                 "relative p-4 rounded-2xl border cursor-pointer transition-all duration-300",
                 isSelected 

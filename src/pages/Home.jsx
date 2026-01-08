@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import ConnectionButton from '@/components/vpn/ConnectionButton';
 import ServerCard from '@/components/vpn/ServerCard';
 import StatsCard from '@/components/vpn/StatsCard';
+import DataCounter from '@/components/vpn/DataCounter';
+import { showAchievement } from '@/components/vpn/AchievementToast';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
 
@@ -20,6 +22,9 @@ export default function Home() {
     const [user, setUser] = useState(null);
     const [userPlan, setUserPlan] = useState('free');
     const [connectionTime, setConnectionTime] = useState(0);
+    const [hasConnectedBefore, setHasConnectedBefore] = useState(
+        localStorage.getItem('hasConnectedBefore') === 'true'
+    );
 
     useEffect(() => {
         base44.auth.me().then(setUser).catch(() => {});
@@ -61,6 +66,11 @@ export default function Home() {
             setSelectedServer(bestServer);
         }
         
+        // Haptic feedback (вибрация на мобильных)
+        if (navigator.vibrate) {
+            navigator.vibrate(isConnected ? 50 : [50, 100, 50]);
+        }
+        
         if (isConnected) {
             setIsConnected(false);
             toast.info('🔓 Отключено от VPN', {
@@ -84,6 +94,13 @@ export default function Home() {
                 origin: { y: 0.6 },
                 colors: ['#8b5cf6', '#10b981', '#3b82f6']
             });
+
+            // Achievement для первого подключения
+            if (!hasConnectedBefore) {
+                setTimeout(() => showAchievement('first_connection'), 1000);
+                localStorage.setItem('hasConnectedBefore', 'true');
+                setHasConnectedBefore(true);
+            }
         }
     };
 
@@ -179,14 +196,20 @@ export default function Home() {
                         />
                         <ScrollArea className="h-[calc(100%-120px)]">
                             <div className="space-y-3 pr-4">
-                                {filteredServers.map((server) => (
-                                    <ServerCard
+                                {filteredServers.map((server, index) => (
+                                    <motion.div
                                         key={server.id}
-                                        server={server}
-                                        isSelected={selectedServer?.id === server.id}
-                                        onSelect={(s) => setSelectedServer(s)}
-                                        userPlan={userPlan}
-                                    />
+                                        initial={{ opacity: 0, x: -50 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: index * 0.05 }}
+                                    >
+                                        <ServerCard
+                                            server={server}
+                                            isSelected={selectedServer?.id === server.id}
+                                            onSelect={(s) => setSelectedServer(s)}
+                                            userPlan={userPlan}
+                                        />
+                                    </motion.div>
                                 ))}
                             </div>
                         </ScrollArea>
@@ -196,20 +219,39 @@ export default function Home() {
                 {/* Connection Button */}
                 <div className="flex justify-center mb-10 relative">
                     {isConnected && (
-                        <motion.div
-                            className="absolute inset-0 -z-10"
-                            animate={{
-                                scale: [1, 1.2, 1],
-                                opacity: [0.3, 0, 0.3]
-                            }}
-                            transition={{
-                                duration: 2,
-                                repeat: Infinity,
-                                ease: "easeInOut"
-                            }}
-                        >
-                            <div className="w-40 h-40 mx-auto rounded-full bg-gradient-to-r from-emerald-500 to-violet-500 blur-2xl" />
-                        </motion.div>
+                        <>
+                            <motion.div
+                                className="absolute inset-0 -z-10"
+                                animate={{
+                                    scale: [1, 1.2, 1],
+                                    opacity: [0.3, 0, 0.3]
+                                }}
+                                transition={{
+                                    duration: 2,
+                                    repeat: Infinity,
+                                    ease: "easeInOut"
+                                }}
+                            >
+                                <div className="w-40 h-40 mx-auto rounded-full bg-gradient-to-r from-emerald-500 to-violet-500 blur-2xl" />
+                            </motion.div>
+                            {[...Array(8)].map((_, i) => (
+                                <motion.div
+                                    key={i}
+                                    className="absolute w-1 h-1 bg-emerald-400 rounded-full"
+                                    initial={{ x: 0, y: 0, opacity: 1 }}
+                                    animate={{
+                                        x: Math.cos((i / 8) * Math.PI * 2) * 100,
+                                        y: Math.sin((i / 8) * Math.PI * 2) * 100,
+                                        opacity: 0
+                                    }}
+                                    transition={{
+                                        duration: 2,
+                                        repeat: Infinity,
+                                        delay: i * 0.1
+                                    }}
+                                />
+                            ))}
+                        </>
                     )}
                     <ConnectionButton
                         isConnected={isConnected}
@@ -217,6 +259,8 @@ export default function Home() {
                         onToggle={handleConnect}
                     />
                 </div>
+
+                <DataCounter isConnected={isConnected} />
 
                 {/* Stats */}
                 <AnimatePresence>

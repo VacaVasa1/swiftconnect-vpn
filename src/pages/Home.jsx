@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import ConnectionButton from '@/components/vpn/ConnectionButton';
 import ServerCard from '@/components/vpn/ServerCard';
 import StatsCard from '@/components/vpn/StatsCard';
+import confetti from 'canvas-confetti';
+import { toast } from 'sonner';
 
 export default function Home() {
     const [isConnected, setIsConnected] = useState(false);
@@ -61,11 +63,27 @@ export default function Home() {
         
         if (isConnected) {
             setIsConnected(false);
+            toast.info('🔓 Отключено от VPN', {
+                description: 'Ваше соединение больше не защищено'
+            });
         } else {
             setIsConnecting(true);
+            toast.loading('Подключение к серверу...', { id: 'connect' });
             await new Promise(r => setTimeout(r, 2000));
             setIsConnecting(false);
             setIsConnected(true);
+            toast.success('🔒 Подключено к VPN!', {
+                id: 'connect',
+                description: `Вы защищены через ${selectedServer?.city || 'сервер'}`
+            });
+            
+            // Конфетти эффект
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#8b5cf6', '#10b981', '#3b82f6']
+            });
         }
     };
 
@@ -88,8 +106,32 @@ export default function Home() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 p-4 pb-24">
-            <div className="max-w-lg mx-auto">
+        <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 p-4 pb-24 relative overflow-hidden">
+            {/* Анимированный фон */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                {[...Array(20)].map((_, i) => (
+                    <motion.div
+                        key={i}
+                        className="absolute w-2 h-2 bg-violet-500/20 rounded-full"
+                        initial={{ 
+                            x: Math.random() * window.innerWidth, 
+                            y: -20,
+                            scale: Math.random() * 0.5 + 0.5
+                        }}
+                        animate={{
+                            y: window.innerHeight + 20,
+                            x: Math.random() * window.innerWidth
+                        }}
+                        transition={{
+                            duration: Math.random() * 10 + 10,
+                            repeat: Infinity,
+                            delay: Math.random() * 5
+                        }}
+                    />
+                ))}
+            </div>
+
+            <div className="max-w-lg mx-auto relative z-10">
                 {/* Header */}
                 <motion.div 
                     className="text-center mb-8 pt-4"
@@ -152,7 +194,23 @@ export default function Home() {
                 </Sheet>
 
                 {/* Connection Button */}
-                <div className="flex justify-center mb-10">
+                <div className="flex justify-center mb-10 relative">
+                    {isConnected && (
+                        <motion.div
+                            className="absolute inset-0 -z-10"
+                            animate={{
+                                scale: [1, 1.2, 1],
+                                opacity: [0.3, 0, 0.3]
+                            }}
+                            transition={{
+                                duration: 2,
+                                repeat: Infinity,
+                                ease: "easeInOut"
+                            }}
+                        >
+                            <div className="w-40 h-40 mx-auto rounded-full bg-gradient-to-r from-emerald-500 to-violet-500 blur-2xl" />
+                        </motion.div>
+                    )}
                     <ConnectionButton
                         isConnected={isConnected}
                         isConnecting={isConnecting}

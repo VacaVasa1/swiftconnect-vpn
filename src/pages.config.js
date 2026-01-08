@@ -4,7 +4,6 @@ import Profile from './pages/Profile';
 import Servers from './pages/Servers';
 import Support from './pages/Support';
 import utils from './pages/utils';
-import index from './pages/index';
 import __Layout from './Layout.jsx';
 
 
@@ -15,7 +14,6 @@ export const PAGES = {
     "Servers": Servers,
     "Support": Support,
     "utils": utils,
-    "index": index,
 }
 
 export const pagesConfig = {

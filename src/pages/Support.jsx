@@ -250,7 +250,7 @@ export default function Support() {
                                                 </p>
                                             </motion.button>
                                         ))}
-                                    </motion.button>
+                                    </motion.div>
                                 )}
                             </AnimatePresence>
                         </TabsContent>

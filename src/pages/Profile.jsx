@@ -26,12 +26,6 @@ const planBadges = {
     ultimate: { label: 'Ultimate', color: 'bg-gradient-to-r from-amber-500 to-orange-500' },
 };
 
-const devices = [
-    { id: 1, name: 'iPhone 15 Pro', type: 'mobile', lastActive: new Date() },
-    { id: 2, name: 'MacBook Pro', type: 'desktop', lastActive: new Date(Date.now() - 86400000) },
-    { id: 3, name: 'iPad Air', type: 'tablet', lastActive: new Date(Date.now() - 172800000) },
-];
-
 const deviceIcons = {
     mobile: Smartphone,
     desktop: Monitor,
@@ -67,6 +61,56 @@ export default function Profile() {
         queryFn: () => base44.entities.Payment.filter({ user_email: user?.email }, '-created_date', 5),
         enabled: !!user?.email,
     });
+
+    const { data: devices = [] } = useQuery({
+        queryKey: ['devices', user?.email],
+        queryFn: () => base44.entities.Device.filter({ user_email: user?.email }, '-last_active', 10),
+        enabled: !!user?.email,
+    });
+
+    useEffect(() => {
+        // Автоматически регистрируем текущее устройство
+        if (user?.email && devices.length === 0) {
+            const deviceInfo = getDeviceInfo();
+            base44.entities.Device.create({
+                user_email: user.email,
+                name: deviceInfo.name,
+                type: deviceInfo.type,
+                last_active: new Date().toISOString(),
+                is_current: true
+            }).then(() => {
+                queryClient.invalidateQueries(['devices', user.email]);
+            });
+        }
+    }, [user, devices]);
+
+    const getDeviceInfo = () => {
+        const ua = navigator.userAgent;
+        let type = 'desktop';
+        let name = 'Неизвестное устройство';
+
+        if (/iPad/.test(ua)) {
+            type = 'tablet';
+            name = 'iPad';
+        } else if (/iPhone/.test(ua)) {
+            type = 'mobile';
+            name = 'iPhone';
+        } else if (/Android/.test(ua) && /Mobile/.test(ua)) {
+            type = 'mobile';
+            name = 'Android';
+        } else if (/Android/.test(ua)) {
+            type = 'tablet';
+            name = 'Android Tablet';
+        } else if (/Mac/.test(ua)) {
+            name = 'Mac';
+        } else if (/Windows/.test(ua)) {
+            name = 'Windows PC';
+        } else if (/Linux/.test(ua)) {
+            name = 'Linux PC';
+        }
+
+        return { name, type };
+    };
 
     useEffect(() => {
         if (subscriptions.length > 0) {
@@ -266,10 +310,10 @@ export default function Profile() {
                                         <div className="flex-1">
                                             <p className="text-white font-medium">{device.name}</p>
                                             <p className="text-sm text-slate-400">
-                                                Активен {format(device.lastActive, 'd MMM, HH:mm', { locale: ru })}
+                                                Активен {format(new Date(device.last_active), 'd MMM, HH:mm', { locale: ru })}
                                             </p>
                                         </div>
-                                        {index === 0 && (
+                                        {device.is_current && (
                                             <Badge className="bg-emerald-500/20 text-emerald-400">
                                                 Текущее
                                             </Badge>

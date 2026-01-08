@@ -6,3 +6,5 @@ export function createPageUrl(pageName, params) {
     }
     return url;
 }
+
+export default { createPageUrl };

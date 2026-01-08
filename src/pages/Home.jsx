@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { base44 } from '@/components/setup/MockAPI';
+import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
+import AuthGuard from '@/components/auth/AuthGuard';
 import { ChevronDown, Globe, Download, Upload, Clock, Shield } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -123,6 +124,7 @@ export default function Home() {
     };
 
     return (
+        <AuthGuard>
         <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 p-4 pb-24 relative overflow-hidden">
             {/* Анимированный фон */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -301,5 +303,6 @@ export default function Home() {
                 </AnimatePresence>
             </div>
         </div>
+        </AuthGuard>
     );
 }

@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import PricingCard from '@/components/vpn/PricingCard';
 import PaymentMethodCard from '@/components/vpn/PaymentMethodCard';
+import PaymentForm from '@/components/payment/PaymentForm';
+import SuccessAnimation from '@/components/payment/SuccessAnimation';
 
 const plans = {
     monthly: [
@@ -127,6 +129,7 @@ export default function Pricing() {
     const [selectedPlan, setSelectedPlan] = useState(null);
     const [selectedPayment, setSelectedPayment] = useState('card');
     const [isProcessing, setIsProcessing] = useState(false);
+    const [paymentStep, setPaymentStep] = useState('method'); // 'method', 'form', 'success'
     const [user, setUser] = useState(null);
     const [userPlan, setUserPlan] = useState('free');
 
@@ -147,14 +150,27 @@ export default function Pricing() {
         }
     }, [subscriptions]);
 
-    const handlePurchase = async () => {
+    const handlePaymentMethodSelect = () => {
+        if (selectedPayment === 'card') {
+            setPaymentStep('form');
+        } else {
+            // Для других методов оплаты сразу обрабатываем
+            handlePurchase();
+        }
+    };
+
+    const handlePurchase = async (cardData) => {
         if (!user) {
             toast.error('Войдите в аккаунт для покупки');
+            base44.auth.redirectToLogin();
             return;
         }
 
         setIsProcessing(true);
         try {
+            // Симуляция обработки платежа
+            await new Promise(r => setTimeout(r, 2000));
+
             const endDate = new Date();
             endDate.setMonth(endDate.getMonth() + (billingPeriod === 'yearly' ? 12 : 1));
 
@@ -176,12 +192,17 @@ export default function Pricing() {
                 auto_renew: true
             });
 
-            toast.success('Подписка успешно оформлена!');
-            setSelectedPlan(null);
+            setPaymentStep('success');
             setUserPlan(selectedPlan.id);
         } catch (error) {
             toast.error('Ошибка при оформлении подписки');
         }
+        setIsProcessing(false);
+    };
+
+    const handleCloseDialog = () => {
+        setSelectedPlan(null);
+        setPaymentStep('method');
         setIsProcessing(false);
     };
 
@@ -260,52 +281,73 @@ export default function Pricing() {
                 </div>
 
                 {/* Payment Dialog */}
-                <Dialog open={!!selectedPlan} onOpenChange={() => setSelectedPlan(null)}>
+                <Dialog open={!!selectedPlan} onOpenChange={handleCloseDialog}>
                     <DialogContent className="bg-slate-900 border-slate-700 max-w-md">
-                        <DialogHeader>
-                            <DialogTitle className="text-white text-xl">
-                                Оформление подписки
-                            </DialogTitle>
-                        </DialogHeader>
-                        
-                        <div className="bg-slate-800/50 rounded-xl p-4 mb-6">
-                            <div className="flex justify-between items-center">
-                                <div>
-                                    <p className="text-white font-semibold">{selectedPlan?.name}</p>
-                                    <p className="text-sm text-slate-400">
-                                        {billingPeriod === 'yearly' ? 'Годовая подписка' : 'Месячная подписка'}
-                                    </p>
-                                </div>
-                                <p className="text-2xl font-bold text-white">
-                                    ${selectedPlan?.price * (billingPeriod === 'yearly' ? 12 : 1)}
-                                </p>
-                            </div>
-                        </div>
+                        {paymentStep === 'success' ? (
+                            <SuccessAnimation
+                                plan={selectedPlan?.name}
+                                onClose={handleCloseDialog}
+                            />
+                        ) : (
+                            <>
+                                <DialogHeader>
+                                    <DialogTitle className="text-white text-xl">
+                                        {paymentStep === 'method' ? 'Оформление подписки' : 'Данные карты'}
+                                    </DialogTitle>
+                                </DialogHeader>
+                                
+                                {paymentStep === 'method' && (
+                                    <>
+                                        <div className="bg-slate-800/50 rounded-xl p-4 mb-6">
+                                            <div className="flex justify-between items-center">
+                                                <div>
+                                                    <p className="text-white font-semibold">{selectedPlan?.name}</p>
+                                                    <p className="text-sm text-slate-400">
+                                                        {billingPeriod === 'yearly' ? 'Годовая подписка' : 'Месячная подписка'}
+                                                    </p>
+                                                </div>
+                                                <p className="text-2xl font-bold text-white">
+                                                    ${selectedPlan?.price * (billingPeriod === 'yearly' ? 12 : 1)}
+                                                </p>
+                                            </div>
+                                        </div>
 
-                        <p className="text-sm text-slate-400 mb-4">Выберите способ оплаты</p>
-                        
-                        <div className="space-y-3 mb-6">
-                            {paymentMethods.map((method) => (
-                                <PaymentMethodCard
-                                    key={method}
-                                    method={method}
-                                    isSelected={selectedPayment === method}
-                                    onSelect={setSelectedPayment}
-                                />
-                            ))}
-                        </div>
+                                        <p className="text-sm text-slate-400 mb-4">Выберите способ оплаты</p>
+                                        
+                                        <div className="space-y-3 mb-6">
+                                            {paymentMethods.map((method) => (
+                                                <PaymentMethodCard
+                                                    key={method}
+                                                    method={method}
+                                                    isSelected={selectedPayment === method}
+                                                    onSelect={setSelectedPayment}
+                                                />
+                                            ))}
+                                        </div>
 
-                        <Button
-                            onClick={handlePurchase}
-                            disabled={isProcessing}
-                            className="w-full h-12 bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600"
-                        >
-                            {isProcessing ? 'Обработка...' : 'Оплатить'}
-                        </Button>
+                                        <Button
+                                            onClick={handlePaymentMethodSelect}
+                                            disabled={isProcessing}
+                                            className="w-full h-12 bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600"
+                                        >
+                                            {isProcessing ? 'Обработка...' : 'Продолжить'}
+                                        </Button>
 
-                        <p className="text-xs text-slate-500 text-center mt-4">
-                            Нажимая "Оплатить", вы соглашаетесь с условиями использования
-                        </p>
+                                        <p className="text-xs text-slate-500 text-center mt-4">
+                                            Нажимая "Продолжить", вы соглашаетесь с условиями использования
+                                        </p>
+                                    </>
+                                )}
+
+                                {paymentStep === 'form' && (
+                                    <PaymentForm
+                                        onSubmit={handlePurchase}
+                                        isProcessing={isProcessing}
+                                        onBack={() => setPaymentStep('method')}
+                                    />
+                                )}
+                            </>
+                        )}
                     </DialogContent>
                 </Dialog>
             </div>

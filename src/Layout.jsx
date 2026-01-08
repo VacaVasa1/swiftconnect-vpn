@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { motion } from 'framer-motion';
-import { base44 } from '@/api/base44Client';
 import { 
     Shield, Globe, CreditCard, User, Headphones,
     Home, Server, DollarSign, HelpCircle, UserCircle

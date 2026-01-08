@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { base44 } from '@/api/base44Client';
+import { base44 } from '@/components/setup/MockAPI';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronDown, Globe, Download, Upload, Clock, Shield } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
